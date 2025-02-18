@@ -4,8 +4,8 @@ import sys
 
 app = QApplication(sys.argv)
 tray = QSystemTrayIcon()
+tray.setIcon(QIcon("assets/icon.png"))
 
-# Add a simple menu
 menu = QMenu()
 menu.addAction("Exit").triggered.connect(app.quit)
 tray.setContextMenu(menu)
