@@ -1,6 +1,7 @@
 from PySide6.QtWidgets import QMainWindow
 from PySide6.QtCore import Qt
 from tray import Tray
+from constants import SETTINGS_VALID
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -14,5 +15,9 @@ class MainWindow(QMainWindow):
         self.setWindowFlag(Qt.WindowMaximizeButtonHint, False)
         
         self.tray = Tray()
+
+        if not SETTINGS_VALID:
+            self.tray.settings.show()
+
 
     
