@@ -5,6 +5,7 @@ from PySide6.QtCore import QTimer, QObject, Signal
 class APIClient(QObject):
     status_changed = Signal(bool)
     break_ended = Signal()
+    break_time_updated = Signal(int, int)
 
     def __init__(self, settings):
         super().__init__()
@@ -14,9 +15,17 @@ class APIClient(QObject):
         self.last_status = None
         logging.basicConfig(level=logging.INFO)
         self.logger = logging.getLogger(__name__)
+        
+        # Single timer for the break duration
         self.break_timer = QTimer()
-        self.break_timer.setSingleShot(True)
+        self.break_timer.setSingleShot(True)  # Will fire once at end
         self.break_timer.timeout.connect(self.end_break)
+        
+        # Timer for updating the countdown display
+        self.display_timer = QTimer()
+        self.display_timer.setInterval(1000)
+        self.display_timer.timeout.connect(self.update_countdown)
+        
         self.on_break = False
 
     def start_break(self, duration_minutes):
@@ -26,11 +35,13 @@ class APIClient(QObject):
         milliseconds = duration_minutes * 60 * 1000
         self.on_break = True
         self.break_timer.start(milliseconds)
+        self.display_timer.start()
         self.logger.info(f"Break started for {duration_minutes} minutes ({milliseconds}ms)")
 
     def end_break(self):
         self.on_break = False
         self.break_timer.stop()
+        self.display_timer.stop()
         self.break_ended.emit()
         self.logger.info("Break ended automatically via timer")
 
@@ -38,11 +49,11 @@ class APIClient(QObject):
         return self.on_break
 
     def update_settings(self, new_settings):
-        self.settings = new_settings
-        if self.timer.isActive():
-            self.stop_polling()
-            self.start_polling()
-            self.logger.info("Settings updated, polling restarted")
+            self.settings = new_settings
+            if self.timer.isActive():
+                self.stop_polling()
+                self.start_polling()
+                self.logger.info("Settings updated, polling restarted")
 
     def start_polling(self):
         if self.settings["api"]["enabled"]:
@@ -53,7 +64,7 @@ class APIClient(QObject):
         self.timer.stop()
         
     def check_status(self):
-        if self.is_on_break(self):
+        if self.is_on_break():
             return self.on_break
         
         try:
@@ -85,3 +96,12 @@ class APIClient(QObject):
             self.logger.error(f"Failed to parse JSON response: {str(e)}")
         except Exception as e:
             self.logger.error(f"Unexpected error: {str(e)}")
+            
+    def update_countdown(self):
+        if not self.on_break:
+            return
+            
+        remaining = self.break_timer.remainingTime()
+        minutes = remaining // 60000  # Convert ms to minutes
+        seconds = (remaining % 60000) // 1000  # Convert remainder to seconds
+        self.break_time_updated.emit(int(minutes), int(seconds))
