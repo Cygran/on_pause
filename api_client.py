@@ -1,6 +1,8 @@
 import logging
 import requests
 from PySide6.QtCore import QTimer, QObject, Signal
+from settings_manager import SettingsManager
+from settings_window import SettingsWindow
 
 class APIClient(QObject):
     status_changed = Signal(bool)
@@ -9,7 +11,7 @@ class APIClient(QObject):
     break_time_updated = Signal(int, int)
     break_started = Signal()
 
-    def __init__(self, settings):
+    def __init__(self, settings: SettingsManager):
         super().__init__()
         self.settings = settings
         self.timer = QTimer()
@@ -17,17 +19,12 @@ class APIClient(QObject):
         self.last_status = None
         logging.basicConfig(level=logging.INFO)
         self.logger = logging.getLogger(__name__)
-        
-        # Single timer for the break duration
         self.break_timer = QTimer()
-        self.break_timer.setSingleShot(True)  # Will fire once at end
+        self.break_timer.setSingleShot(True)
         self.break_timer.timeout.connect(self.end_break)
-        
-        # Timer for updating the countdown display
         self.display_timer = QTimer()
         self.display_timer.setInterval(1000)
         self.display_timer.timeout.connect(self.update_countdown)
-        
         self.on_break = False
 
     def start_break(self, duration_minutes):
@@ -51,16 +48,22 @@ class APIClient(QObject):
     def is_on_break(self):
         return self.on_break
 
-    def update_settings(self, new_settings):
-            self.settings = new_settings
-            if self.timer.isActive():
-                self.stop_polling()
-                self.start_polling()
-                self.logger.info("Settings updated, polling restarted")
+    def on_settings_updated(self):
+        api_enabled = self.settings.current_settings['api']['enabled']
+        if not api_enabled:
+            self.stop_polling()
+            self.logger.info("API disabled in settings")
+            return
+        was_polling = self.timer.isActive()
+        if was_polling:
+            self.stop_polling()
+        if was_polling:
+            self.start_polling()
+            self.logger.info("Settings updated, polling restarted with new interval")
 
     def start_polling(self):
-        if self.settings["api"]["enabled"]:
-            interval = self.settings["api"]["polling_interval"] * 1000 
+        if self.settings.current_settings['api']['enabled']:
+            interval = self.settings.current_settings['api']['polling_interval'] * 1000
             self.timer.start(interval)
             
     def stop_polling(self):
@@ -70,10 +73,11 @@ class APIClient(QObject):
         if self.is_on_break():
             return self.on_break
         
+        
         try:
-            base_url = self.settings['api']['base_url']
-            endpoint = self.settings['api']['endpoint']
-            agent = self.settings['api']['agent']
+            base_url = self.settings.current_settings['api']['base_url']
+            endpoint = self.settings.current_settings['api']['endpoint']
+            agent = self.settings.current_settings['Agent'] 
             
             url = f"{base_url}{endpoint}/?agent={agent}"
             self.logger.info(f"Checking status at: {url}")
