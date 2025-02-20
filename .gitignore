@@ -1,3 +1,5 @@
 .venv/
 __pycache__/
 roadmap/
+test_api_client.py
+test_break_timer.py
