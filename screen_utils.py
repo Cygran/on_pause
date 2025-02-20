@@ -1,5 +1,6 @@
 from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QScreen
+from PySide6.QtCore import QObject, Signal
 from enum import Enum
 
 class ScreenCorner(Enum):
@@ -16,8 +17,11 @@ class ScreenCorner(Enum):
         except ValueError:
             return cls.Top_Right  # default
 
-class ScreenManager:
+class ScreenManager(QObject):
+    screens_changed = Signal()
+    
     def __init__(self):
+        super().__init__()
         self.screens = QApplication.screens()
         self.primary_screen = QApplication.primaryScreen()
         QApplication.instance().screenAdded.connect(self.handle_screen_change)
@@ -26,6 +30,7 @@ class ScreenManager:
     def handle_screen_change(self, _):
         self.screens = QApplication.screens()
         self.primary_screen = QApplication.primaryScreen()
+        self.screens_changed.emit()
 
     def get_screen_names(self):
         """Return list of screen names/identifiers"""

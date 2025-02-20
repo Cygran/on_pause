@@ -9,6 +9,7 @@ class SettingsWindow(QDialog):
     def __init__(self, screen_manager: ScreenManager):
         super().__init__()
         self.screen_manager = screen_manager
+        self.screen_manager.screens_changed.connect(self.update_screen_list)
         self.settings_data = {}
         self.setWindowTitle("Settings")
         self.setFixedSize(300, 250)  # Made slightly taller for new dropdown

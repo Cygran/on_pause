@@ -19,6 +19,7 @@ class MainWindow(QMainWindow):
         
         self.tray = Tray(screen_manager=self.screen_manager)
         self.tray.settings.settings_updated.connect(self.on_settings_updated)
+        self.screen_manager.screens_changed.connect(self.handle_screen_change)
 
         if not settings.settings_valid:
             self.tray.settings.show()
@@ -32,3 +33,14 @@ class MainWindow(QMainWindow):
         selected_corner = ScreenCorner(settings.current_settings.get('Corner', 'top_right'))  # Convert string to enum
         print(f"Moving window to screen {selected_screen_index} and corner {selected_corner}")  # Debug print
         self.screen_manager.position_window(self, selected_screen_index, selected_corner)
+
+    def handle_screen_change(self):
+        preferred_screen = settings.current_settings.get("Screen", 0)
+        preferred_corner = settings.current_settings.get("Corner", "top_right")
+        
+        if preferred_screen < len(self.screen_manager.screens):
+            self.screen_manager.position_window(
+                self, 
+                preferred_screen, 
+                ScreenCorner.from_string(preferred_corner)
+            )
