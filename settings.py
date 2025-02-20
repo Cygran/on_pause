@@ -2,7 +2,7 @@ from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QLineEd
 from PySide6.QtCore import Signal
 import os
 import json
-from constants import SETTINGS_PATH, SETTINGS_FILE, CURRENT_SETTINGS
+from constants import SETTINGS_FILE, CURRENT_SETTINGS
 
 class SettingsWindow(QDialog):
     settings_updated = Signal()
@@ -16,7 +16,7 @@ class SettingsWindow(QDialog):
         layout = QVBoxLayout()
         self.setLayout(layout)
         
-        self.label = QLabel("Agent Number:")
+        self.label = QLabel("EXT Number:")
         layout.addWidget(self.label)
         
         self.input = QLineEdit()
@@ -33,20 +33,50 @@ class SettingsWindow(QDialog):
         self.settings_data = {
             "Agent": self.input.text()
         }
-        try:
-            os.makedirs(os.path.dirname(SETTINGS_FILE), exist_ok=True)
-            with open(SETTINGS_FILE, 'w', encoding='utf-8') as f:
-                json.dump(self.settings_data, f, ensure_ascii=False, indent=4)
-            
-            global CURRENT_SETTINGS, SETTINGS_VALID
-            CURRENT_SETTINGS.update(self.settings_data)
-            SETTINGS_VALID = bool(self.input.text() and self.input.text().isdigit())
-            
-            self.settings_updated.emit()
-            self.close()
-        except Exception as e:
+        if len(self.settings_data["Agent"]) == 0:
             QMessageBox.critical(
                 self,
                 "Error",
-                f"Failed to save settings: {str(e)}"
+                "Please enter an EXT number"
             )
+        elif not self.settings_data["Agent"].isdigit():
+            QMessageBox.critical(
+                self,
+                "Error",
+                "Invalid Characters in EXT number"
+            )
+        elif self.settings_data["Agent"].isdigit() and len(self.settings_data["Agent"]) == 3:
+            try:
+                os.makedirs(os.path.dirname(SETTINGS_FILE), exist_ok=True)
+                with open(SETTINGS_FILE, 'w', encoding='utf-8') as f:
+                    json.dump(self.settings_data, f, ensure_ascii=False, indent=4)
+                
+                global CURRENT_SETTINGS, SETTINGS_VALID
+                CURRENT_SETTINGS.update(self.settings_data)
+                SETTINGS_VALID = bool(self.input.text() and self.input.text().isdigit())
+                
+                self.settings_updated.emit()
+                self.close()
+            except Exception as e:
+                QMessageBox.critical(
+                    self,
+                    "Error",
+                    f"Failed to save settings: {str(e)}"
+                )
+        else:
+            QMessageBox.critical(
+                self,
+                "Error",
+                "EXT number must be a 3-digit number"
+            )
+
+    def load_settings(self):
+        try:
+            if os.path.exists(SETTINGS_FILE):
+                with open(SETTINGS_FILE, 'r', encoding='utf-8') as f:
+                    settings = json.load(f)
+                    if settings.get("Agent") and settings["Agent"].isdigit():
+                        return settings, True
+            return {"Agent": ""}, False
+        except Exception:
+            return {"Agent": ""}, False
