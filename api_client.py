@@ -4,6 +4,7 @@ from PySide6.QtCore import QTimer, QObject, Signal
 
 class APIClient(QObject):
     status_changed = Signal(bool)
+    poll_error = Signal(str)
     break_ended = Signal()
     break_time_updated = Signal(int, int)
     break_started = Signal()

@@ -19,7 +19,7 @@ class MainWindow(QMainWindow):
         self.setWindowFlag(Qt.WindowMinimizeButtonHint, False)
         self.setWindowFlag(Qt.WindowMaximizeButtonHint, False)
         
-        self.tray = Tray(screen_manager=self.screen_manager)
+        self.tray = Tray(screen_manager=self.screen_manager, api_client=self.api_client)
         self.tray.settings.settings_updated.connect(self.on_settings_updated)
         self.screen_manager.screens_changed.connect(self.handle_screen_change)
         self.api_client.status_changed.connect(self.handle_status_change)
