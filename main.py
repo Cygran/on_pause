@@ -4,6 +4,7 @@ import sys
 
 def main():
     app = QApplication(sys.argv)
+    app.setQuitOnLastWindowClosed(False)
     window = MainWindow()
     window.show()
     app.exec()
