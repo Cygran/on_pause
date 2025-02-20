@@ -27,7 +27,9 @@ class MainWindow(QMainWindow):
         self.screen_manager.screens_changed.connect(self.handle_screen_change)
         self.api_client.status_changed.connect(self.handle_status_change)
         self.api_client.break_started.connect(self.handle_break_started)
+        self.api_client.break_time_updated.connect(self.update_break_timer)
         self.api_client.break_ended.connect(self.handle_break_ended)
+        self.api_client.poll_error.connect(self.handle_api_error)
         self.api_client.start_polling()
         if not settings.settings_valid:
             self.tray.settings.show()
@@ -56,6 +58,22 @@ class MainWindow(QMainWindow):
                 background-color: transparent;
             }
         """
+        self.error_style = """
+            QMainWindow {
+                background-color: #808080;
+            }
+            QLabel {
+                color: white;
+                font-weight: bold;
+                font-size: 14pt;
+                padding: 10px;
+            }
+        """ 
+
+        self.timer_label = QLabel("")
+        self.timer_label.setAlignment(Qt.AlignCenter)
+        self.timer_label.hide()
+        self.layout().addWidget(self.timer_label)
 
     def on_settings_updated(self):
         was_visible = self.isVisible()
@@ -100,5 +118,16 @@ class MainWindow(QMainWindow):
         self.position_window()
 
     def handle_break_ended(self):
+        self.timer_label.hide()
         if not self.api_client.is_queue_paused():
             self.hide()
+    
+    def handle_api_error(self):
+        self.setStyleSheet(self.error_style)
+        self.title_label.setText("API Connection Failed")
+        self.show()
+        self.position_window()
+
+    def update_break_timer(self, minutes, seconds):
+        self.timer_label.setText(f"{minutes:02d}:{seconds:02d}")
+        self.timer_label.show()
