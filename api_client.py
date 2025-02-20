@@ -115,3 +115,9 @@ class APIClient(QObject):
 
     def is_queue_paused(self):
         return self.last_status
+    
+    def cancel_break(self):
+        if self.on_break:
+            self.break_timer.stop()
+            self.on_break = False
+            self.break_ended.emit()

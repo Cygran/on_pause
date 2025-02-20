@@ -42,6 +42,14 @@ class MainWindow(QMainWindow):
         self.title_label = QLabel(self.title)
         self.title_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
         self.main_layout.addWidget(self.title_label, alignment=Qt.AlignmentFlag.AlignTop)
+        self.timer_label = QLabel("")
+        self.timer_label.setAlignment(Qt.AlignCenter)
+        self.timer_label.setStyleSheet("font-size: 24pt;")
+        self.main_layout.addWidget(self.timer_label, alignment=Qt.AlignmentFlag.AlignCenter)
+        self.timer_label.hide()
+
+        
+        
         self.pause_style = """
             QMainWindow {
                 background-color: #ff0000;
@@ -69,11 +77,6 @@ class MainWindow(QMainWindow):
                 padding: 10px;
             }
         """ 
-
-        self.timer_label = QLabel("")
-        self.timer_label.setAlignment(Qt.AlignCenter)
-        self.timer_label.hide()
-        self.layout().addWidget(self.timer_label)
 
     def on_settings_updated(self):
         was_visible = self.isVisible()
@@ -114,6 +117,7 @@ class MainWindow(QMainWindow):
         
     def handle_break_started(self):
         self.setStyleSheet(self.pause_style)
+        self.timer_label.show()
         self.show()
         self.position_window()
 
