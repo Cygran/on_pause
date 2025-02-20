@@ -6,6 +6,7 @@ class APIClient(QObject):
     status_changed = Signal(bool)
     break_ended = Signal()
     break_time_updated = Signal(int, int)
+    break_started = Signal()
 
     def __init__(self, settings):
         super().__init__()
@@ -36,6 +37,7 @@ class APIClient(QObject):
         self.on_break = True
         self.break_timer.start(milliseconds)
         self.display_timer.start()
+        self.break_started.emit()
         self.logger.info(f"Break started for {duration_minutes} minutes ({milliseconds}ms)")
 
     def end_break(self):
@@ -105,3 +107,6 @@ class APIClient(QObject):
         minutes = remaining // 60000  # Convert ms to minutes
         seconds = (remaining % 60000) // 1000  # Convert remainder to seconds
         self.break_time_updated.emit(int(minutes), int(seconds))
+
+    def is_queue_paused(self):
+        return self.last_status
