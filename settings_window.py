@@ -1,17 +1,17 @@
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QLineEdit, QMessageBox
+from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QLineEdit, QMessageBox, QComboBox
 from PySide6.QtCore import Signal
-import os
-import json
-from constants import SETTINGS_FILE, CURRENT_SETTINGS
+from screen_utils import ScreenManager
+from settings_manager import settings
 
 class SettingsWindow(QDialog):
     settings_updated = Signal()
     
-    def __init__(self):
+    def __init__(self, screen_manager: ScreenManager):
         super().__init__()
+        self.screen_manager = screen_manager
         self.settings_data = {}
         self.setWindowTitle("Settings")
-        self.setFixedSize(200, 100)
+        self.setFixedSize(300, 200)
         
         layout = QVBoxLayout()
         self.setLayout(layout)
@@ -21,18 +21,34 @@ class SettingsWindow(QDialog):
         
         self.input = QLineEdit()
         layout.addWidget(self.input)
+
+        self.screen_label = QLabel("Select Screen:")
+        layout.addWidget(self.screen_label)
+
+        self.screen_combo = QComboBox()
+        self.update_screen_list()
+        layout.addWidget(self.screen_combo)
         
         self.save_button = QPushButton("Save")
         self.save_button.clicked.connect(self.save)
         layout.addWidget(self.save_button)
 
-        if CURRENT_SETTINGS.get("Agent"):
-            self.input.setText(CURRENT_SETTINGS["Agent"])
+        if settings.current_settings.get("Agent"):
+            self.input.setText(settings.current_settings["Agent"])
+        if settings.current_settings.get("Screen"):
+            self.screen_combo.setCurrentIndex(settings.current_settings["Screen"])
+
+    def update_screen_list(self):
+        self.screen_combo.clear()
+        screen_names = self.screen_manager.get_screen_names()
+        self.screen_combo.addItems(screen_names)
 
     def save(self):
         self.settings_data = {
-            "Agent": self.input.text()
+            "Agent": self.input.text(),
+            "Screen": self.screen_combo.currentIndex()
         }
+        
         if len(self.settings_data["Agent"]) == 0:
             QMessageBox.critical(
                 self,
@@ -47,16 +63,10 @@ class SettingsWindow(QDialog):
             )
         elif self.settings_data["Agent"].isdigit() and len(self.settings_data["Agent"]) == 3:
             try:
-                os.makedirs(os.path.dirname(SETTINGS_FILE), exist_ok=True)
-                with open(SETTINGS_FILE, 'w', encoding='utf-8') as f:
-                    json.dump(self.settings_data, f, ensure_ascii=False, indent=4)
-                
-                global CURRENT_SETTINGS, SETTINGS_VALID
-                CURRENT_SETTINGS.update(self.settings_data)
-                SETTINGS_VALID = bool(self.input.text() and self.input.text().isdigit())
-                
+                settings.save_settings(self.settings_data)
                 self.settings_updated.emit()
                 self.close()
+
             except Exception as e:
                 QMessageBox.critical(
                     self,
@@ -69,14 +79,3 @@ class SettingsWindow(QDialog):
                 "Error",
                 "EXT number must be a 3-digit number"
             )
-
-    def load_settings(self):
-        try:
-            if os.path.exists(SETTINGS_FILE):
-                with open(SETTINGS_FILE, 'r', encoding='utf-8') as f:
-                    settings = json.load(f)
-                    if settings.get("Agent") and settings["Agent"].isdigit():
-                        return settings, True
-            return {"Agent": ""}, False
-        except Exception:
-            return {"Agent": ""}, False

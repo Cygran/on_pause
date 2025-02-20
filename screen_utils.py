@@ -45,3 +45,9 @@ class ScreenManager:
                 return (available.left(), available.bottom() - window_height)
             case ScreenCorner.BottomRight:
                 return (available.right() - window_width, available.bottom() - window_height)
+            
+    def get_screen_names(self) -> list[str]:
+        return [f"Screen {i}" for i, screen in enumerate(self.screens)]
+    
+    def get_screen_count(self) -> int:
+        return len(self.screens)
