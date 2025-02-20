@@ -40,6 +40,22 @@ class MainWindow(QMainWindow):
         self.title_label = QLabel(self.title)
         self.title_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
         self.main_layout.addWidget(self.title_label, alignment=Qt.AlignmentFlag.AlignTop)
+        self.pause_style = """
+            QMainWindow {
+                background-color: #ff0000;
+            }
+            QLabel {
+                color: white;
+                font-weight: bold;
+                font-size: 14pt;
+                padding: 10px;
+            }
+        """
+        self.normal_style = """
+            QMainWindow {
+                background-color: transparent;
+            }
+        """
 
     def on_settings_updated(self):
         was_visible = self.isVisible()
@@ -71,12 +87,15 @@ class MainWindow(QMainWindow):
     
     def handle_status_change(self, is_paused):
         if is_paused:
+            self.setStyleSheet(self.pause_style)
             self.show()
             self.position_window()
         elif not self.api_client.is_on_break():
+            self.setStyleSheet(self.normal_style)
             self.hide()
-    
+        
     def handle_break_started(self):
+        self.setStyleSheet(self.pause_style)
         self.show()
         self.position_window()
 
