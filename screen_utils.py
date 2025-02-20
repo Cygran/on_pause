@@ -2,16 +2,19 @@ from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QScreen
 from enum import Enum
 
-screens = QApplication.screens()
-primary_screen = QApplication.primaryScreen()
-screen_count = len(screens)
-
 class ScreenCorner(Enum):
     Top_Left = "top_left"
     Top_Right = "top_right"
     Bottom_Left = "bottom_left"
-    BottomRight = "bottom_right"
+    Bottom_Right = "bottom_right"
 
+    @classmethod
+    def from_string(cls, corner_str: str):
+        """Convert string to enum value safely"""
+        try:
+            return cls(corner_str)
+        except ValueError:
+            return cls.Top_Right  # default
 
 class ScreenManager:
     def __init__(self):
@@ -20,34 +23,34 @@ class ScreenManager:
         QApplication.instance().screenAdded.connect(self.handle_screen_change)
         QApplication.instance().screenRemoved.connect(self.handle_screen_change)
 
-    def handle_screen_change(self, screen: QScreen):
+    def handle_screen_change(self, _):
         self.screens = QApplication.screens()
         self.primary_screen = QApplication.primaryScreen()
 
+    def get_screen_names(self):
+        """Return list of screen names/identifiers"""
+        return [f"Screen {i+1}" for i in range(len(self.screens))]
 
-    def get_safe_screen(screen_index=0) -> QScreen:
-        if screen_index >= len(screens):
-            return primary_screen
-        return screens[screen_index]
+    def get_safe_screen(self, screen_index = 0) -> QScreen:
+        if screen_index >= len(self.screens):
+            return self.primary_screen
+        return self.screens[screen_index]
 
-    def get_corner_position(screen: QScreen, corner: ScreenCorner, window_width, window_height):
+    def position_window(self, window, screen_index: int, corner: ScreenCorner):
+        screen = self.get_safe_screen(screen_index)
         available = screen.availableGeometry()
-        geometry = screen.geometry()
-        useable_width = available.width()
-        useable_height = available.height()
-
-        match corner:
-            case ScreenCorner.Top_Left:
-                return (available.left(), available.top())
-            case ScreenCorner.Top_Right:
-                return (available.right() - window_width, available.top())
-            case ScreenCorner.Bottom_Left:
-                return (available.left(), available.bottom() - window_height)
-            case ScreenCorner.BottomRight:
-                return (available.right() - window_width, available.bottom() - window_height)
+        window_width = window.width()
+        window_height = window.height()
+        
+        if corner == ScreenCorner.Top_Left:
+            x, y = available.left(), available.top()
+        elif corner == ScreenCorner.Top_Right:
+            x, y = available.right() - window_width, available.top()
+        elif corner == ScreenCorner.Bottom_Left:
+            x, y = available.left(), available.bottom() - window_height
+        elif corner == ScreenCorner.Bottom_Right:
+            x, y = available.right() - window_width, available.bottom() - window_height
+        else:  # default to top right
+            x, y = available.right() - window_width, available.top()
             
-    def get_screen_names(self) -> list[str]:
-        return [f"Screen {i}" for i, screen in enumerate(self.screens)]
-    
-    def get_screen_count(self) -> int:
-        return len(self.screens)
+        window.move(x, y)
